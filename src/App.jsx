@@ -46,11 +46,18 @@ function App() {
         const desktopData = await desktopRes.json();
         const getCrux = (data) => {
           const exp = data.loadingExperience || data.originLoadingExperience || {};
+          console.log(exp,'++metric')
+          const roundToHundred = (val) => {
+    if (typeof val !== 'number') return val ?? 'N/A';
+    return Math.round(val / 100) * 100;
+  };
           return {
-            fcp: exp.metrics?.FIRST_CONTENTFUL_PAINT_MS?.percentile ?? 'N/A',
-            lcp: exp.metrics?.LARGEST_CONTENTFUL_PAINT_MS?.percentile ?? 'N/A',
-            cls: exp.metrics?.CUMULATIVE_LAYOUT_SHIFT_SCORE?.percentile ?? 'N/A',
-            inp: exp.metrics?.INTERACTION_TO_NEXT_PAINT_MS?.percentile ?? 'N/A',
+              fcp: roundToHundred(exp.metrics?.FIRST_CONTENTFUL_PAINT_MS?.percentile),
+              lcp: roundToHundred(exp.metrics?.LARGEST_CONTENTFUL_PAINT_MS?.percentile),            
+              cls: typeof exp.metrics?.CUMULATIVE_LAYOUT_SHIFT_SCORE?.percentile === 'number'
+                    ? exp.metrics.CUMULATIVE_LAYOUT_SHIFT_SCORE.percentile / 100
+                    : 'N/A',              
+              inp: exp.metrics?.INTERACTION_TO_NEXT_PAINT?.percentile ?? 'N/A',
           };
         };
         const mobileCrux = getCrux(mobileData);
