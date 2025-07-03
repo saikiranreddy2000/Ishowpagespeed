@@ -239,7 +239,7 @@ function App() {
           <textarea
             value={urls.join('\n')}
             onChange={e => handleBulkInput(e.target.value)}
-            placeholder={"Paste up to 30 URLs, one per line, comma, or space separated"}
+            placeholder={"Paste URLs here, one per line, comma, or space separated"}
             rows={8}
             style={{ width: '100%', fontSize: '1.1em', padding: 10, resize: 'vertical', marginBottom: 12 }}
             required
