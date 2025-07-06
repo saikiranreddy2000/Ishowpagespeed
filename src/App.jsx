@@ -8,6 +8,7 @@ function App() {
   const [excelUrl, setExcelUrl] = useState(null);
   const [showHeaderTooltip, setShowHeaderTooltip] = useState(false);
   const [showTooltipIdx, setShowTooltipIdx] = useState(null);
+  const [progress, setProgress] = useState({ done: 0, total: 0 });
 
   // Handle input change for all URLs at once
   const handleBulkInput = (value) => {
@@ -39,6 +40,7 @@ function App() {
     const BATCH_SIZE = 5; // Number of URLs to process in parallel
     const DELAY_MS = 1500; // Delay between batches (1.5 seconds)
     let allResults = [];
+    setProgress({ done: 0, total: urlList.length });
 
     for (let i = 0; i < urlList.length; i += BATCH_SIZE) {
       const batch = urlList.slice(i, i + BATCH_SIZE);
@@ -175,6 +177,8 @@ function App() {
           };
         } catch (e) {
           return { url, error: 'Failed to fetch' };
+        } finally {
+          setProgress(prev => ({ ...prev, done: prev.done + 1 }));
         }
       });
       const batchResults = await Promise.all(fetchAll);
@@ -186,6 +190,7 @@ function App() {
     }
     await exportToExcel(allResults);
     setLoading(false);
+    setProgress({ done: 0, total: 0 });
   };
 
   // Export metrics to Excel
@@ -198,7 +203,8 @@ function App() {
     const timeStr = `${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}`;
     const dateTimeStr = `${dateStr} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
     // Only export the raw data keys, not the display headers
-    const data = metrics.map(row => ({
+    const data = metrics.map((row, idx) => ({
+      '#': idx + 1,
       url: row.url,
       mobile_lighthouse: row.mobile_lighthouse,
       mobile_fcp: row.mobile_fcp,
@@ -212,7 +218,6 @@ function App() {
       desktop_cls: row.desktop_cls,
       desktop_inp: row.desktop_inp,
       desktop_source: row.desktop_source,
-      error: row.error || '',
       recommendations: row.recommendations || '',
     }));
     if (data.length > 0) {
@@ -223,12 +228,12 @@ function App() {
       const dataWithMeta = [metaRow, ...data];
       const ws = XLSX.utils.json_to_sheet(dataWithMeta, { skipHeader: false });
       ws['!cols'] = [
+        { wch: 6 }, // serial number
         { wch: 40 }, // url
         { wch: 14 }, // mobile_lighthouse
         { wch: 16 }, { wch: 16 }, { wch: 12 }, { wch: 16 }, { wch: 14 },
         { wch: 14 }, // desktop_lighthouse
         { wch: 16 }, { wch: 16 }, { wch: 12 }, { wch: 16 }, { wch: 14 },
-        { wch: 16 }, // error
         { wch: 60 } // recommendations
       ];
       const wb = XLSX.utils.book_new();
@@ -250,11 +255,13 @@ function App() {
   };
 
   // --- Proxy fallback utility ---
+  // Proxy list for CORS workarounds. Thingproxy is unreliable and should be last (or removed if it fails consistently).
   const proxyList = [
     url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-    url => `https://thingproxy.freeboard.io/fetch/${url}`,
     url => `https://corsproxy.org/?${encodeURIComponent(url)}`,
-    url => `https://yacdn.org/proxy/${url}`
+    url => `https://yacdn.org/proxy/${url}`,
+    // Thingproxy is last due to CORS issues; remove if it fails for your deployment
+    url => `https://thingproxy.freeboard.io/fetch/${url}`
   ];
 
   async function fetchWithProxies(url) {
@@ -269,7 +276,12 @@ function App() {
         lastError = e.message;
       }
     }
-    throw new Error(lastError || 'All proxies failed');
+    // Show a more helpful error message for CORS/proxy failures
+    throw new Error(
+      (lastError ? lastError + '\n' : '') +
+      'All proxy attempts failed. This is likely due to CORS restrictions or proxy limits. If you are using the GitHub Pages version, public proxies may not work reliably.\n' +
+      'As a workaround, you can download the sitemap.xml or webpage manually and paste the URLs here.'
+    );
   }
 
   // Fetch all URLs from a sitemap.xml
@@ -296,7 +308,7 @@ function App() {
       const textarea = document.querySelector('textarea');
       if (textarea && urlArr.length) textarea.value = urlArr.join('\n');
     } catch (e) {
-      alert('Failed to fetch or parse URLs from the sitemap. This may be due to CORS restrictions, proxy limits, or an invalid sitemap.');
+      alert('Failed to fetch or parse URLs from the sitemap.\n' + e.message);
     }
   };
 
@@ -323,7 +335,7 @@ function App() {
       const textarea = document.querySelector('textarea');
       if (textarea && urlArr.length) textarea.value = urlArr.join('\n');
     } catch (e) {
-      alert('Failed to fetch or parse URLs from the webpage. This may be due to CORS restrictions, proxy limits, or an invalid page.');
+      alert('Failed to fetch or parse URLs from the webpage.\n' + e.message);
     }
   };
 
@@ -336,6 +348,32 @@ function App() {
         <b>Both Mobile & Desktop metrics will be included for each URL.</b>
       </div>
       <form onSubmit={e => { e.preventDefault(); generateReports(); }}>
+        {loading && progress.total > 0 && (
+          <div style={{ margin: '16px 0', width: '100%' }}>
+            <div style={{ marginBottom: 6, fontWeight: 500 }}>
+              Generating reports: {progress.done} of {progress.total} completed
+            </div>
+            <div style={{
+              width: '100%',
+              height: 16,
+              background: '#eee',
+              borderRadius: 8,
+              overflow: 'hidden',
+              boxShadow: 'inset 0 1px 2px #ccc'
+            }}>
+              <div style={{
+                width: `${(progress.done / progress.total) * 100}%`,
+                height: '100%',
+                background: '#0078d4',
+                transition: 'width 0.3s',
+                borderRadius: 8
+              }} />
+            </div>
+            <div style={{ marginTop: 4, fontSize: 13, color: '#666' }}>
+              Pending: {progress.total - progress.done} URLs
+            </div>
+          </div>
+        )}
         <div className="url-input-row">
           <textarea
             value={urls.join('\n')}
@@ -375,6 +413,7 @@ function App() {
           <table>
             <thead>
               <tr>
+                <th>S.no</th>
                 <th>URL</th>
                 <th>Mobile Lighthouse Performance</th>
                 <th>Mobile FCP (s)</th>
@@ -388,7 +427,6 @@ function App() {
                 <th>Desktop CLS</th>
                 <th>Desktop INP (ms)</th>
                 <th>Desktop Data Source</th>
-                <th>Error</th>
                 <th style={{ textAlign: 'center', position: 'relative' }}>
                   Recommendation
                   <span
@@ -446,6 +484,7 @@ function App() {
             <tbody>
               {results.map((r, i) => (
                 <tr key={i}>
+                  <td>{i + 1}</td>
                   <td>{r.url}</td>
                   <td>{r.mobile_lighthouse ?? ''}</td>
                   <td>{r.mobile_fcp ?? ''}</td>
@@ -459,7 +498,6 @@ function App() {
                   <td>{r.desktop_cls ?? ''}</td>
                   <td>{r.desktop_inp ?? ''}</td>
                   <td>{r.desktop_source ?? ''}</td>
-                  <td>{r.error ?? ''}</td>
                   <td style={{ textAlign: 'center', position: 'relative' }}>
                     <span
                       style={{ cursor: 'pointer', color: '#0078d4', position: 'relative' }}
