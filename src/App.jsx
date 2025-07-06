@@ -6,6 +6,8 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState([]);
   const [excelUrl, setExcelUrl] = useState(null);
+  const [showHeaderTooltip, setShowHeaderTooltip] = useState(false);
+  const [showTooltipIdx, setShowTooltipIdx] = useState(null);
 
   // Handle input change for all URLs at once
   const handleBulkInput = (value) => {
@@ -91,10 +93,70 @@ function App() {
               ? Math.round(data.lighthouseResult.categories.performance.score * 100)
               : 'N/A';
           };
+          // Get recommendations for Core Web Vitals from Lighthouse audits
+          const getRecommendations = (data) => {
+            if (!data.lighthouseResult || !data.lighthouseResult.audits) return '';
+            const audits = data.lighthouseResult.audits;
+            // Pick relevant audits for Core Web Vitals
+            const keys = [
+              'first-contentful-paint',
+              'largest-contentful-paint',
+              'cumulative-layout-shift',
+              'interactive',
+              'total-blocking-time',
+              'speed-index',
+              'uses-rel-preload',
+              'uses-responsive-images',
+              'offscreen-images',
+              'render-blocking-resources',
+              'unused-css-rules',
+              'unused-javascript',
+              'efficient-animated-content',
+              'modern-image-formats',
+              'uses-text-compression',
+              'uses-long-cache-ttl',
+              'uses-optimized-images',
+              'uses-webp-images',
+              'uses-http2',
+              'server-response-time',
+              'redirects',
+              'mainthread-work-breakdown',
+              'dom-size',
+              'unminified-javascript',
+              'unminified-css',
+              'uses-passive-event-listeners',
+              'uses-rel-preconnect',
+              'font-display',
+              'uses-webp-images',
+              'uses-optimized-images',
+              'uses-text-compression',
+              'uses-long-cache-ttl',
+              'uses-rel-preload',
+              'uses-responsive-images',
+              'offscreen-images',
+              'modern-image-formats',
+              'efficient-animated-content',
+              'total-blocking-time',
+              'interactive',
+              'mainthread-work-breakdown',
+              'dom-size',
+            ];
+            // Collect failed or not passed audits with details
+            const recs = keys
+              .map(key => audits[key])
+              .filter(a => a && a.score !== 1 && a.title && a.description)
+              .map(a => `• ${a.title}: ${a.description.replace(/\s+/g, ' ').trim()}`);
+            return recs.length ? recs.join('\n') : 'No major recommendations.';
+          };
           const mobileCrux = getCrux(mobileData, 'mobile');
           const desktopCrux = getCrux(desktopData, 'desktop');
           const mobileLighthouse = getLighthousePerf(mobileData);
           const desktopLighthouse = getLighthousePerf(desktopData);
+          // Combine recommendations from both mobile and desktop
+          const recommendations = [
+            mobileData ? `Mobile:\n${getRecommendations(mobileData)}` : '',
+            desktopData ? `Desktop:\n${getRecommendations(desktopData)}` : ''
+          ].filter(Boolean).join('\n\n');
           return {
             url,
             'mobile_fcp': mobileCrux.fcp,
@@ -109,6 +171,7 @@ function App() {
             'desktop_inp': desktopCrux.inp,
             'desktop_source': desktopCrux.source,
             'desktop_lighthouse': desktopLighthouse,
+            'recommendations': recommendations,
           };
         } catch (e) {
           return { url, error: 'Failed to fetch' };
@@ -128,15 +191,13 @@ function App() {
   // Export metrics to Excel
   const exportToExcel = async (metrics) => {
     const XLSX = await import('xlsx');
-    // Add header row for real user metrics (CrUX) and Lighthouse
-    const header = [
-      'URL',
-      'Mobile Lighthouse Performance',
-      'Mobile FCP (s)', 'Mobile LCP (s)', 'Mobile CLS', 'Mobile INP (ms)', 'Mobile Data Source',
-      'Desktop Lighthouse Performance', // moved here
-      'Desktop FCP (s)', 'Desktop LCP (s)', 'Desktop CLS', 'Desktop INP (ms)', 'Desktop Data Source',
-      'Error'
-    ];
+    // Get current date and time for filename and sheet
+    const now = new Date();
+    const pad = n => n.toString().padStart(2, '0');
+    const dateStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+    const timeStr = `${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}`;
+    const dateTimeStr = `${dateStr} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+    // Only export the raw data keys, not the display headers
     const data = metrics.map(row => ({
       url: row.url,
       mobile_lighthouse: row.mobile_lighthouse,
@@ -145,38 +206,78 @@ function App() {
       mobile_cls: row.mobile_cls,
       mobile_inp: row.mobile_inp,
       mobile_source: row.mobile_source,
-      desktop_lighthouse: row.desktop_lighthouse, // moved here
+      desktop_lighthouse: row.desktop_lighthouse,
       desktop_fcp: row.desktop_fcp,
       desktop_lcp: row.desktop_lcp,
       desktop_cls: row.desktop_cls,
       desktop_inp: row.desktop_inp,
       desktop_source: row.desktop_source,
-      error: row.error || ''
+      error: row.error || '',
+      recommendations: row.recommendations || '',
     }));
-    const ws = XLSX.utils.json_to_sheet(data, { header });
-    // Set column widths for better appearance (fit to screen width)
-    ws['!cols'] = [
-      { wch: 40 }, // URL
-      { wch: 14 }, // Mobile Lighthouse
-      { wch: 16 }, { wch: 16 }, { wch: 12 }, { wch: 16 }, { wch: 14 }, // Mobile
-      { wch: 14 }, // Desktop Lighthouse (moved here)
-      { wch: 16 }, { wch: 16 }, { wch: 12 }, { wch: 16 }, { wch: 14 }, // Desktop
-      { wch: 16 } // Error
-    ];
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'PageSpeed');
-    const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-    const blob = new Blob([wbout], { type: 'application/octet-stream' });
-    const url = URL.createObjectURL(blob);
-    setExcelUrl(url);
+    if (data.length > 0) {
+      // Add a row at the top with the generation date/time
+      const metaRow = {
+        url: `Report generated: ${dateTimeStr}`
+      };
+      const dataWithMeta = [metaRow, ...data];
+      const ws = XLSX.utils.json_to_sheet(dataWithMeta, { skipHeader: false });
+      ws['!cols'] = [
+        { wch: 40 }, // url
+        { wch: 14 }, // mobile_lighthouse
+        { wch: 16 }, { wch: 16 }, { wch: 12 }, { wch: 16 }, { wch: 14 },
+        { wch: 14 }, // desktop_lighthouse
+        { wch: 16 }, { wch: 16 }, { wch: 12 }, { wch: 16 }, { wch: 14 },
+        { wch: 16 }, // error
+        { wch: 60 } // recommendations
+      ];
+      const wb = XLSX.utils.book_new();
+      // Sheet name with date and time (max 31 chars for Excel)
+      let sheetName = `PageSpeed_${dateStr}_${timeStr}`;
+      if (sheetName.length > 31) sheetName = sheetName.slice(0, 31);
+      XLSX.utils.book_append_sheet(wb, ws, sheetName);
+      const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+      const blob = new Blob([wbout], { type: 'application/octet-stream' });
+      const filename = `${sheetName}.xlsx`;
+      const url = URL.createObjectURL(blob);
+      setExcelUrl(url);
+      // Set download attribute dynamically
+      const link = document.querySelector('.download-btn');
+      if (link) link.setAttribute('download', filename);
+    } else {
+      setExcelUrl(null);
+    }
   };
+
+  // --- Proxy fallback utility ---
+  const proxyList = [
+    url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+    url => `https://thingproxy.freeboard.io/fetch/${url}`,
+    url => `https://corsproxy.org/?${encodeURIComponent(url)}`,
+    url => `https://yacdn.org/proxy/${url}`
+  ];
+
+  async function fetchWithProxies(url) {
+    let lastError;
+    for (const makeProxy of proxyList) {
+      try {
+        const proxyUrl = makeProxy(url);
+        const res = await fetch(proxyUrl);
+        if (res.ok) return await res.text();
+        lastError = `Proxy ${proxyUrl} failed: ${res.status}`;
+      } catch (e) {
+        lastError = e.message;
+      }
+    }
+    throw new Error(lastError || 'All proxies failed');
+  }
 
   // Fetch all URLs from a sitemap.xml
   const fetchUrlsFromSitemap = async (sitemapUrl) => {
     try {
-      const res = await fetch(sitemapUrl, { mode: 'cors' });
-      if (!res.ok) throw new Error('Network response was not ok');
-      const text = await res.text();
+      let urlToFetch = sitemapUrl;
+      if (!/^https?:\/\//i.test(urlToFetch)) urlToFetch = 'https://' + urlToFetch;
+      const text = await fetchWithProxies(urlToFetch);
       // Parse XML and extract <loc> tags
       let parser;
       let xmlDoc;
@@ -195,15 +296,16 @@ function App() {
       const textarea = document.querySelector('textarea');
       if (textarea && urlArr.length) textarea.value = urlArr.join('\n');
     } catch (e) {
-      alert('Failed to fetch or parse URLs from the sitemap. This may be due to CORS restrictions or an invalid sitemap.');
+      alert('Failed to fetch or parse URLs from the sitemap. This may be due to CORS restrictions, proxy limits, or an invalid sitemap.');
     }
   };
 
   // Fetch all URLs from a webpage that lists them (comma separated)
   const fetchUrlsFromWebpage = async (webpageUrl) => {
     try {
-      const res = await fetch(webpageUrl);
-      const text = await res.text();
+      let urlToFetch = webpageUrl;
+      if (!/^https?:\/\//i.test(urlToFetch)) urlToFetch = 'https://' + urlToFetch;
+      const text = await fetchWithProxies(urlToFetch);
       // Extract all URLs from the page content (comma separated)
       // Try to find a long comma-separated string of URLs
       const urlMatch = text.match(/https?:\/\/[^\s,'"<>]+(,\s*https?:\/\/[^\s,'"<>]+)+/);
@@ -216,13 +318,12 @@ function App() {
         const allUrls = Array.from(text.matchAll(/https?:\/\/[^\s,'"<>]+/g)).map(m => m[0]);
         urlArr = Array.from(new Set(allUrls));
       }
-      console.log(urlArr,'+++')
       setUrls(urlArr.length ? urlArr : ['']);
       // Also update the textarea directly for user feedback
       const textarea = document.querySelector('textarea');
       if (textarea && urlArr.length) textarea.value = urlArr.join('\n');
     } catch (e) {
-      alert('Failed to fetch or parse URLs from the webpage.');
+      alert('Failed to fetch or parse URLs from the webpage. This may be due to CORS restrictions, proxy limits, or an invalid page.');
     }
   };
 
@@ -288,6 +389,58 @@ function App() {
                 <th>Desktop INP (ms)</th>
                 <th>Desktop Data Source</th>
                 <th>Error</th>
+                <th style={{ textAlign: 'center', position: 'relative' }}>
+                  Recommendation
+                  <span
+                    style={{ marginLeft: 4, cursor: 'pointer', color: '#0078d4', verticalAlign: 'middle', position: 'relative' }}
+                    onClick={e => {
+                      e.stopPropagation();
+                      setShowHeaderTooltip(v => !v);
+                    }}
+                    role="img"
+                    aria-label="recommendation info"
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0078d4" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ verticalAlign: 'middle' }}>
+                      <circle cx="12" cy="12" r="10"/>
+                      <circle cx="12" cy="10" r="1"/>
+                      <path d="M12 12v4"/>
+                    </svg>
+                    {showHeaderTooltip && (
+                      <span
+                        style={{
+                          position: 'absolute',
+                          right: '28px',
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          background: '#fff',
+                          color: '#222',
+                          border: '1px solid #ccc',
+                          borderRadius: 6,
+                          padding: '8px 12px',
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
+                          zIndex: 10,
+                          minWidth: 220,
+                          fontSize: '0.98em',
+                          whiteSpace: 'normal',
+                        }}
+                      >
+                        You can find the recommendation in Excel sheet
+                        <span
+                          style={{
+                            position: 'absolute',
+                            top: 2,
+                            right: 8,
+                            cursor: 'pointer',
+                            color: '#888',
+                            fontWeight: 'bold',
+                            fontSize: 16
+                          }}
+                          onClick={e => { e.stopPropagation(); setShowHeaderTooltip(false); }}
+                        >×</span>
+                      </span>
+                    )}
+                  </span>
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -300,13 +453,64 @@ function App() {
                   <td>{r.mobile_cls ?? ''}</td>
                   <td>{r.mobile_inp ?? ''}</td>
                   <td>{r.mobile_source ?? ''}</td>
-                  <td>{r.desktop_lighthouse ?? ''}</td> {/* moved here */}
+                  <td>{r.desktop_lighthouse ?? ''}</td>
                   <td>{r.desktop_fcp ?? ''}</td>
                   <td>{r.desktop_lcp ?? ''}</td>
                   <td>{r.desktop_cls ?? ''}</td>
                   <td>{r.desktop_inp ?? ''}</td>
                   <td>{r.desktop_source ?? ''}</td>
                   <td>{r.error ?? ''}</td>
+                  <td style={{ textAlign: 'center', position: 'relative' }}>
+                    <span
+                      style={{ cursor: 'pointer', color: '#0078d4', position: 'relative' }}
+                      onClick={e => {
+                        e.stopPropagation();
+                        setShowTooltipIdx(showTooltipIdx === i ? null : i);
+                      }}
+                      role="img"
+                      aria-label="recommendation info"
+                    >
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0078d4" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ verticalAlign: 'middle' }}>
+                        <circle cx="12" cy="12" r="10"/>
+                        <circle cx="12" cy="10" r="1"/>
+                        <path d="M12 12v4"/>
+                      </svg>
+                      {showTooltipIdx === i && (
+                        <span
+                          style={{
+                            position: 'absolute',
+                            right: '28px',
+                            top: '50%',
+                            transform: 'translateY(-50%)',
+                            background: '#fff',
+                            color: '#222',
+                            border: '1px solid #ccc',
+                            borderRadius: 6,
+                            padding: '8px 12px',
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
+                            zIndex: 10,
+                            minWidth: 220,
+                            fontSize: '0.98em',
+                            whiteSpace: 'normal',
+                          }}
+                        >
+                          You can find the recommendation in Excel sheet
+                          <span
+                            style={{
+                              position: 'absolute',
+                              top: 2,
+                              right: 8,
+                              cursor: 'pointer',
+                              color: '#888',
+                              fontWeight: 'bold',
+                              fontSize: 16
+                            }}
+                            onClick={e => { e.stopPropagation(); setShowTooltipIdx(null); }}
+                          >×</span>
+                        </span>
+                      )}
+                    </span>
+                  </td>
                 </tr>
               ))}
             </tbody>
