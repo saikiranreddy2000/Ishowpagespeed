@@ -9,6 +9,8 @@ function App() {
   const [showHeaderTooltip, setShowHeaderTooltip] = useState(false);
   const [showTooltipIdx, setShowTooltipIdx] = useState(null);
   const [progress, setProgress] = useState({ done: 0, total: 0 });
+  // Loader for sitemap/webpage extraction
+  const [extracting, setExtracting] = useState(false);
 
   // Handle input change for all URLs at once
   const handleBulkInput = (value) => {
@@ -190,7 +192,7 @@ function App() {
     }
     await exportToExcel(allResults);
     setLoading(false);
-    setProgress({ done: 0, total: 0 });
+    // Do NOT reset progress here, so the progress bar stays visible after completion
   };
 
   // Export metrics to Excel
@@ -284,6 +286,7 @@ function App() {
 
   // Fetch all URLs from a sitemap.xml
   const fetchUrlsFromSitemap = async (sitemapUrl) => {
+    setExtracting(true);
     try {
       let urlToFetch = sitemapUrl;
       if (!/^https?:\/\//i.test(urlToFetch)) urlToFetch = 'https://' + urlToFetch;
@@ -307,11 +310,14 @@ function App() {
       if (textarea && urlArr.length) textarea.value = urlArr.join('\n');
     } catch (e) {
       alert('Failed to fetch or parse URLs from the sitemap.\n' + e.message);
+    } finally {
+      setExtracting(false);
     }
   };
 
   // Fetch all URLs from a webpage that lists them (comma separated)
   const fetchUrlsFromWebpage = async (webpageUrl) => {
+    setExtracting(true);
     try {
       let urlToFetch = webpageUrl;
       if (!/^https?:\/\//i.test(urlToFetch)) urlToFetch = 'https://' + urlToFetch;
@@ -334,6 +340,8 @@ function App() {
       if (textarea && urlArr.length) textarea.value = urlArr.join('\n');
     } catch (e) {
       alert('Failed to fetch or parse URLs from the webpage.\n' + e.message);
+    } finally {
+      setExtracting(false);
     }
   };
 
@@ -346,10 +354,16 @@ function App() {
         <b>Both Mobile & Desktop metrics will be included for each URL.</b>
       </div>
       <form onSubmit={e => { e.preventDefault(); generateReports(); }}>
-        {loading && progress.total > 0 && (
+        {(loading || (progress.done === progress.total && progress.total > 0)) && (
           <div style={{ margin: '16px 0', width: '100%' }}>
             <div style={{ marginBottom: 6, fontWeight: 500 }}>
-              Generating reports: {progress.done} of {progress.total} completed
+              {progress.done === progress.total && progress.total > 0 && !loading
+                ? (
+                  <span style={{ color: '#007a1a' }}>All reports generated!</span>
+                )
+                : (
+                  <>Generating reports: {progress.done} of {progress.total} completed</>
+                )}
             </div>
             <div style={{
               width: '100%',
@@ -362,25 +376,54 @@ function App() {
               <div style={{
                 width: `${(progress.done / progress.total) * 100}%`,
                 height: '100%',
-                background: '#0078d4',
+                background: progress.done === progress.total && progress.total > 0 ? '#007a1a' : '#0078d4',
                 transition: 'width 0.3s',
                 borderRadius: 8
               }} />
             </div>
             <div style={{ marginTop: 4, fontSize: 13, color: '#666' }}>
-              Pending: {progress.total - progress.done} URLs
+              {progress.done === progress.total && progress.total > 0 && !loading
+                ? 'All URLs processed.'
+                : `Pending: ${progress.total - progress.done} URLs`}
             </div>
           </div>
         )}
-        <div className="url-input-row">
+        <div className="url-input-row" style={{ position: 'relative' }}>
           <textarea
             value={urls.join('\n')}
             onChange={e => handleBulkInput(e.target.value)}
-            placeholder={"Paste URLs here, one per line, comma, or space separated"}
+            placeholder={extracting ? '' : "Paste URLs here, one per line, comma, or space separated"}
             rows={8}
-            style={{ width: '100%', fontSize: '1.1em', padding: 10, resize: 'vertical', marginBottom: 12 }}
+            style={{ width: '100%', fontSize: '1.1em', padding: 10, resize: 'vertical', marginBottom: 12, background: extracting ? '#f8fafd' : undefined, color: extracting ? '#aaa' : undefined }}
             required
+            disabled={extracting}
           />
+          {extracting && (
+            <div style={{
+              position: 'absolute',
+              left: 0,
+              top: 0,
+              width: '100%',
+              height: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: 'rgba(255,255,255,0.7)',
+              zIndex: 2
+            }}>
+              <span className="loader" style={{ width: 32, height: 32, display: 'inline-block' }}>
+                <svg width="32" height="32" viewBox="0 0 44 44" xmlns="http://www.w3.org/2000/svg" stroke="#0078d4">
+                  <g fill="none" fillRule="evenodd" strokeWidth="4">
+                    <circle cx="22" cy="22" r="18" strokeOpacity=".2" />
+                    <path d="M40 22c0-9.94-8.06-18-18-18">
+                      <animateTransform attributeName="transform" type="rotate" from="0 22 22" to="360 22 22" dur="0.9s" repeatCount="indefinite" />
+                    </path>
+                  </g>
+                </svg>
+              </span>
+              <span style={{ marginLeft: 12, fontWeight: 500, color: '#0078d4', fontSize: 16 }}>Extracting URLs...</span>
+            </div>
+          )}
         </div>
         <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
           <input
