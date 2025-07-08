@@ -202,9 +202,8 @@ function App() {
     const dateStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
     const timeStr = `${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}`;
     const dateTimeStr = `${dateStr} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
-    // Only export the raw data keys, not the display headers
-    const data = metrics.map((row, idx) => ({
-      '#': idx + 1,
+    // Only export the raw data keys, not the display headers, and do NOT include serial number column
+    const data = metrics.map((row) => ({
       url: row.url,
       mobile_lighthouse: row.mobile_lighthouse,
       mobile_fcp: row.mobile_fcp,
@@ -218,7 +217,6 @@ function App() {
       desktop_cls: row.desktop_cls,
       desktop_inp: row.desktop_inp,
       desktop_source: row.desktop_source,
-      recommendations: row.recommendations || '',
     }));
     if (data.length > 0) {
       // Add a row at the top with the generation date/time
@@ -228,13 +226,11 @@ function App() {
       const dataWithMeta = [metaRow, ...data];
       const ws = XLSX.utils.json_to_sheet(dataWithMeta, { skipHeader: false });
       ws['!cols'] = [
-        { wch: 6 }, // serial number
         { wch: 40 }, // url
         { wch: 14 }, // mobile_lighthouse
         { wch: 16 }, { wch: 16 }, { wch: 12 }, { wch: 16 }, { wch: 14 },
         { wch: 14 }, // desktop_lighthouse
-        { wch: 16 }, { wch: 16 }, { wch: 12 }, { wch: 16 }, { wch: 14 },
-        { wch: 60 } // recommendations
+        { wch: 16 }, { wch: 16 }, { wch: 12 }, { wch: 16 }, { wch: 14 }
       ];
       const wb = XLSX.utils.book_new();
       // Sheet name with date and time (max 31 chars for Excel)
@@ -257,6 +253,8 @@ function App() {
   // --- Proxy fallback utility ---
   // Proxy list for CORS workarounds. Thingproxy is unreliable and should be last (or removed if it fails consistently).
   const proxyList = [
+    // Your custom Render.com proxy (highest priority)
+    url => `https://ishowpagespeed-cors.onrender.com/${url}`,
     url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
     url => `https://corsproxy.org/?${encodeURIComponent(url)}`,
     url => `https://yacdn.org/proxy/${url}`,
@@ -427,58 +425,7 @@ function App() {
                 <th>Desktop CLS</th>
                 <th>Desktop INP (ms)</th>
                 <th>Desktop Data Source</th>
-                <th style={{ textAlign: 'center', position: 'relative' }}>
-                  Recommendation
-                  <span
-                    style={{ marginLeft: 4, cursor: 'pointer', color: '#0078d4', verticalAlign: 'middle', position: 'relative' }}
-                    onClick={e => {
-                      e.stopPropagation();
-                      setShowHeaderTooltip(v => !v);
-                    }}
-                    role="img"
-                    aria-label="recommendation info"
-                  >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0078d4" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ verticalAlign: 'middle' }}>
-                      <circle cx="12" cy="12" r="10"/>
-                      <circle cx="12" cy="10" r="1"/>
-                      <path d="M12 12v4"/>
-                    </svg>
-                    {showHeaderTooltip && (
-                      <span
-                        style={{
-                          position: 'absolute',
-                          right: '28px',
-                          top: '50%',
-                          transform: 'translateY(-50%)',
-                          background: '#fff',
-                          color: '#222',
-                          border: '1px solid #ccc',
-                          borderRadius: 6,
-                          padding: '8px 12px',
-                          boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
-                          zIndex: 10,
-                          minWidth: 220,
-                          fontSize: '0.98em',
-                          whiteSpace: 'normal',
-                        }}
-                      >
-                        You can find the recommendation in Excel sheet
-                        <span
-                          style={{
-                            position: 'absolute',
-                            top: 2,
-                            right: 8,
-                            cursor: 'pointer',
-                            color: '#888',
-                            fontWeight: 'bold',
-                            fontSize: 16
-                          }}
-                          onClick={e => { e.stopPropagation(); setShowHeaderTooltip(false); }}
-                        >×</span>
-                      </span>
-                    )}
-                  </span>
-                </th>
+                {/* Recommendation column removed */}
               </tr>
             </thead>
             <tbody>
@@ -498,57 +445,7 @@ function App() {
                   <td>{r.desktop_cls ?? ''}</td>
                   <td>{r.desktop_inp ?? ''}</td>
                   <td>{r.desktop_source ?? ''}</td>
-                  <td style={{ textAlign: 'center', position: 'relative' }}>
-                    <span
-                      style={{ cursor: 'pointer', color: '#0078d4', position: 'relative' }}
-                      onClick={e => {
-                        e.stopPropagation();
-                        setShowTooltipIdx(showTooltipIdx === i ? null : i);
-                      }}
-                      role="img"
-                      aria-label="recommendation info"
-                    >
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0078d4" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ verticalAlign: 'middle' }}>
-                        <circle cx="12" cy="12" r="10"/>
-                        <circle cx="12" cy="10" r="1"/>
-                        <path d="M12 12v4"/>
-                      </svg>
-                      {showTooltipIdx === i && (
-                        <span
-                          style={{
-                            position: 'absolute',
-                            right: '28px',
-                            top: '50%',
-                            transform: 'translateY(-50%)',
-                            background: '#fff',
-                            color: '#222',
-                            border: '1px solid #ccc',
-                            borderRadius: 6,
-                            padding: '8px 12px',
-                            boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
-                            zIndex: 10,
-                            minWidth: 220,
-                            fontSize: '0.98em',
-                            whiteSpace: 'normal',
-                          }}
-                        >
-                          You can find the recommendation in Excel sheet
-                          <span
-                            style={{
-                              position: 'absolute',
-                              top: 2,
-                              right: 8,
-                              cursor: 'pointer',
-                              color: '#888',
-                              fontWeight: 'bold',
-                              fontSize: 16
-                            }}
-                            onClick={e => { e.stopPropagation(); setShowTooltipIdx(null); }}
-                          >×</span>
-                        </span>
-                      )}
-                    </span>
-                  </td>
+                  {/* Recommendation cell removed */}
                 </tr>
               ))}
             </tbody>
