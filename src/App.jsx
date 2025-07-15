@@ -1,13 +1,94 @@
-import { useState } from 'react'
-import './App.css'
+import { useState, useEffect } from 'react';
+import './App.css';
+import ProgressBar from './ProgressBar';
+import ResultsTable from './ResultsTable';
+import { proxyList, fetchWithProxies, getCrux, getLighthousePerf, exportToExcel } from './pagespeedUtils';
+import CruxGraphChart from './CruxGraphChart';
+import CruxMetricTabs from './CruxMetricTabs';
 
 function App() {
+  // CrUX graph state
+  const [cruxGraph, setCruxGraph] = useState({ visible: false, loading: false, data: null, url: '', error: null, formFactor: 'PHONE' });
+
+  // Listen for graph icon click
+  useEffect(() => {
+    const handler = async (e) => {
+      const { url } = e.detail;
+      setCruxGraph({ visible: true, loading: true, data: null, url, error: null, formFactor: 'PHONE' });
+      // Extract origin from URL
+      let origin;
+      try {
+        origin = new URL(url).origin;
+      } catch {
+        setCruxGraph(g => ({ ...g, loading: false, error: 'Invalid URL' }));
+        return;
+      }
+      // Fetch CrUX API data (prefer url-level, fallback to origin-level)
+      const fetchCrux = async (formFactor) => {
+        setCruxGraph(g => ({ ...g, loading: true, error: null, formFactor }));
+        try {
+          const apiKey = 'AIzaSyApNpUJyvuNDt3RZZIa2rCASP_s98CClxc';
+          // Try url-level first
+          let body = {
+            url,
+            formFactor,
+            metrics: [
+              'largest_contentful_paint',
+              'cumulative_layout_shift',
+              'interaction_to_next_paint'
+            ]
+          };
+          let res = await fetch(`https://chromeuxreport.googleapis.com/v1/records:queryHistoryRecord?key=${apiKey}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+          });
+          let data = await res.json();
+          // If url-level data is not present, fallback to origin
+          if (!data.record || (!data.record.metrics && !data.record.urlMetrics)) {
+            body = {
+              origin,
+              formFactor,
+              metrics: [
+                'largest_contentful_paint',
+                'cumulative_layout_shift',
+                'interaction_to_next_paint'
+              ]
+            };
+            res = await fetch(`https://chromeuxreport.googleapis.com/v1/records:queryHistoryRecord?key=${apiKey}`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(body)
+            });
+            data = await res.json();
+          }
+          if (data.record) {
+            setCruxGraph(g => ({ ...g, loading: false, data: data.record, error: null, formFactor }));
+          } else {
+            setCruxGraph(g => ({ ...g, loading: false, error: data.error?.message || 'No data found', formFactor }));
+          }
+        } catch (err) {
+          setCruxGraph(g => ({ ...g, loading: false, error: err.message, formFactor }));
+        }
+      };
+      await fetchCrux('PHONE');
+      // Attach to window for modal toggle
+      window._fetchCrux = async (formFactor) => {
+        // Only fetch if not already showing this formFactor
+        setCruxGraph(g => {
+          if (g.formFactor === formFactor && g.data) return g;
+          return { ...g, loading: true, error: null, formFactor };
+        });
+        await fetchCrux(formFactor);
+      };
+    };
+    window.addEventListener('showCruxGraph', handler);
+    return () => window.removeEventListener('showCruxGraph', handler);
+  }, []);
   const [urls, setUrls] = useState(['']);
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState([]);
   const [excelUrl, setExcelUrl] = useState(null);
-  const [showHeaderTooltip, setShowHeaderTooltip] = useState(false);
-  const [showTooltipIdx, setShowTooltipIdx] = useState(null);
   const [progress, setProgress] = useState({ done: 0, total: 0 });
   // Loader for sitemap/webpage extraction
   const [extracting, setExtracting] = useState(false);
@@ -350,44 +431,10 @@ function App() {
       <h1>PageSpeed Report Generator</h1>
       <p>Enter URLs below. Click 'Generate' to get PageSpeed metrics and download as Excel.</p>
       <div style={{ marginBottom: 16 }}>
-        {/* Device checkboxes removed, always fetch both */}
         <b>Both Mobile & Desktop metrics will be included for each URL.</b>
       </div>
       <form onSubmit={e => { e.preventDefault(); generateReports(); }}>
-        {(loading || (progress.done === progress.total && progress.total > 0)) && (
-          <div style={{ margin: '16px 0', width: '100%' }}>
-            <div style={{ marginBottom: 6, fontWeight: 500 }}>
-              {progress.done === progress.total && progress.total > 0 && !loading
-                ? (
-                  <span style={{ color: '#007a1a' }}>All reports generated!</span>
-                )
-                : (
-                  <>Generating reports: {progress.done} of {progress.total} completed</>
-                )}
-            </div>
-            <div style={{
-              width: '100%',
-              height: 16,
-              background: '#eee',
-              borderRadius: 8,
-              overflow: 'hidden',
-              boxShadow: 'inset 0 1px 2px #ccc'
-            }}>
-              <div style={{
-                width: `${(progress.done / progress.total) * 100}%`,
-                height: '100%',
-                background: progress.done === progress.total && progress.total > 0 ? '#007a1a' : '#0078d4',
-                transition: 'width 0.3s',
-                borderRadius: 8
-              }} />
-            </div>
-            <div style={{ marginTop: 4, fontSize: 13, color: '#666' }}>
-              {progress.done === progress.total && progress.total > 0 && !loading
-                ? 'All URLs processed.'
-                : `Pending: ${progress.total - progress.done} URLs`}
-            </div>
-          </div>
-        )}
+        <ProgressBar loading={loading} progress={progress} />
         <div className="url-input-row" style={{ position: 'relative' }}>
           <textarea
             value={urls.join('\n')}
@@ -448,64 +495,46 @@ function App() {
           {loading ? 'Generating...' : 'Generate'}
         </button>
       </form>
-      {results.length > 0 && (
-        <div className="results">
-          <h2>Results</h2>
-          <table>
-            <thead>
-              <tr>
-                <th>S.no</th>
-                <th>URL</th>
-                <th>Mobile Lighthouse Performance</th>
-                <th>Mobile FCP (s)</th>
-                <th>Mobile LCP (s)</th>
-                <th>Mobile CLS</th>
-                <th>Mobile INP (ms)</th>
-                <th>Mobile Data Source</th>
-                <th>Desktop Lighthouse Performance</th> {/* moved here */}
-                <th>Desktop FCP (s)</th>
-                <th>Desktop LCP (s)</th>
-                <th>Desktop CLS</th>
-                <th>Desktop INP (ms)</th>
-                <th>Desktop Data Source</th>
-                {/* Recommendation column removed */}
-              </tr>
-            </thead>
-            <tbody>
-              {results.map((r, i) => (
-                <tr key={i}>
-                  <td>{i + 1}</td>
-                  <td>{r.url}</td>
-                  <td>{r.mobile_lighthouse ?? ''}</td>
-                  <td>{r.mobile_fcp ?? ''}</td>
-                  <td>{r.mobile_lcp ?? ''}</td>
-                  <td>{r.mobile_cls ?? ''}</td>
-                  <td>{r.mobile_inp ?? ''}</td>
-                  <td>{r.mobile_source ?? ''}</td>
-                  <td>{r.desktop_lighthouse ?? ''}</td>
-                  <td>{r.desktop_fcp ?? ''}</td>
-                  <td>{r.desktop_lcp ?? ''}</td>
-                  <td>{r.desktop_cls ?? ''}</td>
-                  <td>{r.desktop_inp ?? ''}</td>
-                  <td>{r.desktop_source ?? ''}</td>
-                  {/* Recommendation cell removed */}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <div className="metric-definitions">
-            <b>Metric definitions (percentile values, real user data):</b><br/>
-            <ul>
-              <li><b>FCP</b>: First Contentful Paint (s)</li>
-              <li><b>LCP</b>: Largest Contentful Paint (s)</li>
-              <li><b>CLS</b>: Cumulative Layout Shift</li>
-              <li><b>INP</b>: Interaction to Next Paint (ms)</li>
-            </ul>
-          </div>
-        </div>
-      )}
+      <ResultsTable results={results} />
       {excelUrl && (
         <a href={excelUrl} download="pagespeed-metrics.xlsx" className="download-btn">Download Excel</a>
+      )}
+
+      {/* CrUX Graph Modal */}
+      {cruxGraph.visible && (
+        <div style={{
+          position: 'fixed', left: 0, top: 0, width: '100vw', height: '100vh',
+          background: 'rgba(0,0,0,0.25)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center'
+        }} onClick={() => setCruxGraph(g => ({ ...g, visible: false }))}>
+          <div style={{ background: '#fff', borderRadius: 12, boxShadow: '0 4px 24px #0002', padding: 32, minWidth: 480, maxWidth: 900, width: '90vw' }} onClick={e => e.stopPropagation()}>
+            <h2 style={{ marginTop: 0 }}>CrUX Historical Metrics</h2>
+            <div style={{ marginBottom: 12, fontSize: 15, color: '#0078d4' }}>{cruxGraph.url}</div>
+            <div style={{ marginBottom: 16 }}>
+              <button
+                style={{
+                  background: cruxGraph.formFactor === 'PHONE' ? '#0078d4' : '#eee', color: cruxGraph.formFactor === 'PHONE' ? '#fff' : '#333',
+                  border: 'none', borderRadius: 6, padding: '6px 16px', marginRight: 8, cursor: 'pointer', fontWeight: 500
+                }}
+                onClick={() => window._fetchCrux('PHONE')}
+                disabled={cruxGraph.loading}
+              >Mobile</button>
+              <button
+                style={{
+                  background: cruxGraph.formFactor === 'DESKTOP' ? '#0078d4' : '#eee', color: cruxGraph.formFactor === 'DESKTOP' ? '#fff' : '#333',
+                  border: 'none', borderRadius: 6, padding: '6px 16px', cursor: 'pointer', fontWeight: 500
+                }}
+                onClick={() => window._fetchCrux('DESKTOP')}
+                disabled={cruxGraph.loading}
+              >Desktop</button>
+            </div>
+            {cruxGraph.loading && <div>Loading historical data...</div>}
+            {cruxGraph.error && <div style={{ color: 'red' }}>{cruxGraph.error}</div>}
+            {cruxGraph.data && (
+              <CruxMetricTabs cruxData={cruxGraph.data} formFactor={cruxGraph.formFactor} />
+            )}
+            <button style={{ marginTop: 18 }} onClick={() => setCruxGraph(g => ({ ...g, visible: false }))}>Close</button>
+          </div>
+        </div>
       )}
     </div>
   );
