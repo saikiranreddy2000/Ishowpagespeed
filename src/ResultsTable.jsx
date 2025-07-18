@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 
 const columns = [
   { key: 'sno', label: 'S.no', sortable: false },
@@ -18,13 +18,12 @@ const columns = [
   { key: 'desktop_source', label: 'Desktop Data Source', sortable: false },
 ];
 
+
 export default function ResultsTable({ results }) {
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
 
-  if (!results.length) return null;
-
   // Sorting logic
-  const sortedResults = React.useMemo(() => {
+  const sortedResults = useMemo(() => {
     if (!sortConfig.key) return results;
     const col = columns.find(c => c.key === sortConfig.key);
     if (!col || col.sortable === false) return results;
@@ -61,6 +60,8 @@ export default function ResultsTable({ results }) {
       setSortConfig({ key, direction: 'asc' });
     }
   };
+
+  if (!results.length) return null;
 
   return (
     <div className="results">
