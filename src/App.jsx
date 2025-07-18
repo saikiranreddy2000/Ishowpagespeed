@@ -506,7 +506,20 @@ function App() {
           position: 'fixed', left: 0, top: 0, width: '100vw', height: '100vh',
           background: 'rgba(0,0,0,0.25)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center'
         }} onClick={() => setCruxGraph(g => ({ ...g, visible: false }))}>
-          <div style={{ background: '#fff', borderRadius: 12, boxShadow: '0 4px 24px #0002', padding: 32, minWidth: 480, maxWidth: 900, width: '90vw' }} onClick={e => e.stopPropagation()}>
+          <div
+            style={{
+              background: (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? '#232a36' : '#fff',
+              color: (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? '#f8fafc' : '#222',
+              borderRadius: 12,
+              boxShadow: '0 4px 24px #0002',
+              padding: 24,
+              minWidth: 340,
+              maxWidth: 540,
+              width: '96vw',
+              position: 'relative'
+            }}
+            onClick={e => e.stopPropagation()}
+          >
             <h2 style={{ marginTop: 0 }}>CrUX Historical Metrics</h2>
             <div style={{ marginBottom: 12, fontSize: 15, color: '#0078d4' }}>{cruxGraph.url}</div>
             <div style={{ marginBottom: 16 }}>
@@ -532,7 +545,7 @@ function App() {
             {cruxGraph.data && (
               <CruxMetricTabs cruxData={cruxGraph.data} formFactor={cruxGraph.formFactor} />
             )}
-            <button style={{ marginTop: 18 }} onClick={() => setCruxGraph(g => ({ ...g, visible: false }))}>Close</button>
+            <button style={{ position: 'absolute', top: 16, right: 16, zIndex: 10, padding: '6px 18px', fontSize: 18 }} onClick={() => setCruxGraph(g => ({ ...g, visible: false }))}>✕</button>
           </div>
         </div>
       )}

@@ -66,3 +66,55 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 }
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color: #f8fafc;
+    background-color: #181c24;
+  }
+  body {
+    background: #181c24 !important;
+  }
+  .container {
+    background: #232a36;
+    box-shadow: 0 4px 24px 0 rgba(0,0,0,0.18);
+  }
+  .results table {
+    background: #232a36;
+    color: #f8fafc;
+  }
+  .results th {
+    background: #232a36;
+    color: #a5b4fc;
+    border-bottom: 2px solid #334155;
+  }
+  .results tr:nth-child(even) td {
+    background: #1e2530;
+  }
+  .results tr:hover td {
+    background: #2a3140;
+  }
+  .metric-definitions {
+    background: #1e2530;
+    border-left: 5px solid #2563eb;
+    color: #cbd5e1;
+  }
+  .url-input-row textarea,
+  input[type="url"] {
+    background: #232a36;
+    color: #f8fafc;
+    border: 1.5px solid #334155;
+  }
+  button, .download-btn {
+    background: linear-gradient(90deg, #2563eb 60%, #181c24 100%);
+    color: #f8fafc;
+  }
+  button:disabled {
+    background: #334155;
+    color: #aaa;
+  }
+  .download-btn {
+    background: linear-gradient(90deg, #059669 60%, #232a36 100%);
+    color: #f8fafc;
+  }
+}

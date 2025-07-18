@@ -64,14 +64,8 @@ export default function CruxGraphChart({ cruxData, metric }) {
         percentiles.length,
         periods.length
       );
-      labels = Array.from({ length: len }, (_, i) => {
-        const p = periods[i];
-        if (p && p.firstDate) {
-          // Format: YYYY-MM (Month and Year)
-          return `${p.firstDate.year}-${String(p.firstDate.month).padStart(2, '0')}`;
-        }
-        return `Period ${i + 1}`;
-      });
+      // Assign a simple cumulative number for each data point (1, 2, ..., len)
+      labels = Array.from({ length: len }, (_, i) => (i + 1).toString());
       good = hist[0].densities.slice(0, len).map(d => Number((d * 100).toFixed(1)));
       ni = hist[1].densities.slice(0, len).map(d => Number((d * 100).toFixed(1)));
       poor = hist[2].densities.slice(0, len).map(d => Number((d * 100).toFixed(1)));
@@ -188,26 +182,53 @@ export default function CruxGraphChart({ cruxData, metric }) {
     responsive: true,
     plugins: {
       legend: { display: false },
-      title: { display: true, text: metricMap[metric]?.label ? `${metricMap[metric].label} Historical Values (last ${labels.length} months)` : 'Core Web Vitals Distribution (%)' },
+      // Calculate the real month span from firstDate to lastDate
+      title: { 
+        display: true, 
+        text: (() => {
+          if (Array.isArray(cruxData.collectionPeriods) && cruxData.collectionPeriods.length > 1) {
+            const first = cruxData.collectionPeriods[0]?.firstDate;
+            const last = cruxData.collectionPeriods[cruxData.collectionPeriods.length - 1]?.lastDate;
+            if (first && last) {
+              // Calculate month difference
+              const start = new Date(first.year, first.month - 1, first.day || 1);
+              const end = new Date(last.year, last.month - 1, last.day || 1);
+              let months = (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth()) + 1;
+              if (months < 1) months = 1;
+              return metricMap[metric]?.label 
+                ? `${metricMap[metric].label} Historical Values (${months} month${months > 1 ? 's' : ''})`
+                : `Core Web Vitals Distribution (%)`;
+            }
+          }
+          return metricMap[metric]?.label 
+            ? `${metricMap[metric].label} Historical Values (${labels.length} points)`
+            : 'Core Web Vitals Distribution (%)';
+        })()
+      },
       tooltip: {
         callbacks: {
-      title: function(context) {
-        // Show full YYYY-MM for clarity, and show both start and end dates
-        const idx = context[0]?.dataIndex;
-        const label = labels[idx] || '';
-        // Find start and end dates from periods if available
-        let start = '', end = '';
-        if (Array.isArray(context[0]?.chart?.data?.labels) && context[0]?.chart?.data?.labels.length > 1) {
-          const chartLabels = context[0].chart.data.labels;
-          start = chartLabels[0];
-          end = chartLabels[chartLabels.length - 1];
-        }
-        // Only show if both are valid dates
-        if (start && end && start !== end) {
-          return `${label} (Start: ${start}, End: ${end})`;
-        }
-        return label;
-      },
+          title: function(context) {
+            // Show the date range for the hovered data point, if available
+            const idx = context[0]?.dataIndex;
+            let dateLabel = '';
+            // Try to get periods from cruxData.collectionPeriods
+            let periods = null;
+            if (context[0]?.chart?.options && context[0].chart.options.periods) {
+              periods = context[0].chart.options.periods;
+            } else if (typeof cruxData === 'object' && Array.isArray(cruxData.collectionPeriods)) {
+              periods = cruxData.collectionPeriods;
+            }
+            if (Array.isArray(periods) && periods[idx] && periods[idx].firstDate && periods[idx].lastDate) {
+              const fd = periods[idx].firstDate;
+              const ld = periods[idx].lastDate;
+              const start = `${fd.year}-${String(fd.month).padStart(2, '0')}-${String(fd.day).padStart(2, '0')}`;
+              const end = `${ld.year}-${String(ld.month).padStart(2, '0')}-${String(ld.day).padStart(2, '0')}`;
+              dateLabel = `Tracked: ${start} to ${end}`;
+            } else {
+              dateLabel = labels[idx] || '';
+            }
+            return dateLabel;
+          },
           label: function(context) {
             if (context.dataset.label.includes('percentile')) {
               return `${context.dataset.label}: ${context.parsed.y}${unit}`;
