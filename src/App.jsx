@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+// You need to run: npm install emailjs-com
+import emailjs from 'emailjs-com';
 import './App.css';
 import ProgressBar from './ProgressBar';
 import ResultsTable from './ResultsTable';
@@ -7,6 +9,7 @@ import CruxGraphChart from './CruxGraphChart';
 import CruxMetricTabs from './CruxMetricTabs';
 
 function App() {
+  // Review modal state removed
   // CrUX graph state
   const [cruxGraph, setCruxGraph] = useState({ visible: false, loading: false, data: null, url: '', error: null, formFactor: 'PHONE' });
 
@@ -497,8 +500,16 @@ function App() {
       </form>
       <ResultsTable results={results} />
       {excelUrl && (
-        <a href={excelUrl} download="pagespeed-metrics.xlsx" className="download-btn">Download Excel</a>
+        <a
+          href={excelUrl}
+          download="pagespeed-metrics.xlsx"
+          className="download-btn"
+        >
+          Download Excel
+        </a>
       )}
+
+      {/* Review Modal removed */}
 
       {/* CrUX Graph Modal */}
       {cruxGraph.visible && (
