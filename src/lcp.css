@@ -1,0 +1,163 @@
+/* LCP Calculator Styles */
+.calculator-section {
+  max-width: 1000px;
+  margin: 2rem auto;
+  padding: 2rem;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.analysis-form {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.url-input {
+  flex: 1;
+  padding: 12px;
+  border: 2px solid #e0e0e0;
+  border-radius: 4px;
+  font-size: 16px;
+}
+
+.analyze-btn {
+  padding: 12px 24px;
+  background: #0078d4;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 16px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.analyze-btn:disabled {
+  background: #cccccc;
+  cursor: not-allowed;
+}
+
+.error-message {
+  padding: 1rem;
+  margin: 1rem 0;
+  background: #fee;
+  border: 1px solid #fcc;
+  border-radius: 4px;
+  color: #c00;
+}
+
+.score-card {
+  background: #f8f9fa;
+  padding: 2rem;
+  border-radius: 8px;
+  text-align: center;
+  margin: 2rem 0;
+}
+
+.score-label {
+  font-size: 1.2rem;
+  color: #666;
+  margin: 0;
+}
+
+.score-value {
+  font-size: 2.5rem;
+  font-weight: bold;
+  margin: 1rem 0;
+}
+
+.score-rating {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  font-weight: bold;
+}
+
+.score-rating.good {
+  background: #4caf50;
+  color: white;
+}
+
+.score-rating.needs-improvement {
+  background: #ff9800;
+  color: white;
+}
+
+.score-rating.poor {
+  background: #f44336;
+  color: white;
+}
+
+.lcp-elements {
+  margin-top: 2rem;
+}
+
+.lcp-element-card {
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin: 1rem 0;
+}
+
+.element-snippet {
+  margin-top: 1rem;
+}
+
+.element-snippet pre {
+  background: #f1f3f5;
+  padding: 1rem;
+  border-radius: 4px;
+  overflow-x: auto;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.explanation {
+  margin-top: 3rem;
+  padding: 2rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.explanation ul {
+  list-style-type: none;
+  padding-left: 0;
+}
+
+.explanation li {
+  margin: 0.75rem 0;
+  padding-left: 1.5rem;
+  position: relative;
+}
+
+.explanation li::before {
+  content: "•";
+  position: absolute;
+  left: 0;
+  color: #0078d4;
+}
+
+.score-pill {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.875rem;
+  margin-right: 0.5rem;
+}
+
+.score-pill.good {
+  background: #4caf50;
+  color: white;
+}
+
+.score-pill.needs-improvement {
+  background: #ff9800;
+  color: white;
+}
+
+.score-pill.poor {
+  background: #f44336;
+  color: white;
+}
