@@ -48,6 +48,48 @@ html, body {
   width: 100%;
   max-width: 1200px;
   margin: 0 auto;
+}
+
+/* Coming Soon Pages */
+.coming-soon-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  padding: 2rem;
+  text-align: center;
+  background-color: var(--bg-primary);
+}
+
+.coming-soon-message {
+  margin-top: 2rem;
+  padding: 2rem;
+  background-color: var(--bg-secondary);
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.coming-soon-message p {
+  font-size: 1.5rem;
+  color: var(--text-secondary);
+  margin-bottom: 1rem;
+}
+
+.progress-indicator {
+  font-size: 3rem;
+  margin-top: 1rem;
+  animation: bounce 1s infinite;
+}
+
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
   padding: 0 1rem;
   box-sizing: border-box;
 }
