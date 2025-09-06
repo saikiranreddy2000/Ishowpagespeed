@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import './App.css';
-import { BASE_PATH } from './routes/Routes';
+import { BASE_PATH } from './routes/Routes.jsx';
 
 const MENU_ITEMS = [
   { label: 'Home', to: `${BASE_PATH}` },

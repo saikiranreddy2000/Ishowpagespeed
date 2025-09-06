@@ -47,12 +47,36 @@
   color: #c00;
 }
 
+.scores-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+  margin: 2rem 0;
+}
+
+.timing-chart-container {
+  background: #fff;
+  border-radius: 8px;
+  padding: 2rem;
+  margin: 2rem 0;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.timing-chart {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.timing-chart h3 {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
 .score-card {
   background: #f8f9fa;
   padding: 2rem;
   border-radius: 8px;
   text-align: center;
-  margin: 2rem 0;
 }
 
 .score-label {
@@ -160,4 +184,43 @@
 .score-pill.poor {
   background: #f44336;
   color: white;
+}
+
+/* Device Toggle Styles */
+.device-toggle {
+  display: flex;
+  justify-content: center;
+  margin: 2rem auto;
+  background: #fff;
+  padding: 4px;
+  border-radius: 4px;
+  width: 300px;
+  border: 1px solid #e0e0e0;
+}
+
+.device-toggle button {
+  flex: 1;
+  padding: 12px 24px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 16px;
+  position: relative;
+  color: #666;
+  transition: color 0.3s ease;
+}
+
+.device-toggle button.active {
+  color: #000;
+}
+
+.device-toggle button.active::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: #000;
+  transition: background 0.3s ease;
 }
