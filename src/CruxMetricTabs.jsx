@@ -8,7 +8,6 @@ const METRICS = [
 ];
 
 export default function CruxMetricTabs({ cruxData, formFactor }) {
-    console.log(cruxData,'Chartfile')
   const [selected, setSelected] = useState('largest_contentful_paint');
   return (
     <div>

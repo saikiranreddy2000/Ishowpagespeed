@@ -40,7 +40,7 @@ export default function LCP() {
       }
 
       const data = await response.json();
-      
+      console.log(data,'data')
       // Extract LCP score and elements
       const lcpAudit = data.lighthouseResult.audits['largest-contentful-paint'];
       const lcpElementsAudit = data.lighthouseResult.audits['largest-contentful-paint-element'];
@@ -48,7 +48,6 @@ export default function LCP() {
 
       // Extract timing data from lcpElementsAudit
       const timingItems = lcpElementsAudit?.details?.items?.[1]?.items || [];
-      console.log('Timing Items:', timingItems);
       
       // Process timing data with actual timing values
       const processedTimingData = {
@@ -58,8 +57,6 @@ export default function LCP() {
         renderDelay: timingItems.find(item => item.phase === 'Render Delay')?.timing || 0
       };
       
-      console.log('Processed Timing Data:', processedTimingData);
-      console.log('LCP Elements Audit:', lcpElementsAudit);
 
       // Update results for the specific device
       setResults(prev => ({
@@ -86,7 +83,6 @@ export default function LCP() {
     if (score <= 4.0) return { text: 'Needs Improvement', class: 'needs-improvement' };
     return { text: 'Poor', class: 'poor' };
   };
-console.log(currentResults.lcpElements,'lcpElements')
   return (
     <div className="container">
       <h1>LCP Calculator</h1>

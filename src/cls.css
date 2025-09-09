@@ -18,6 +18,82 @@
   margin-bottom: 2rem;
 }
 
+/* Unsized Images Section Styles */
+.unsized-images-section {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background-color: var(--bg-secondary);
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.section-description {
+  color: var(--text-secondary);
+  margin-bottom: 1rem;
+  font-size: 0.95rem;
+}
+
+.score-indicator {
+  margin-bottom: 1.5rem;
+}
+
+.score-badge {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.score-badge.good {
+  background-color: var(--color-success-bg);
+  color: var(--color-success);
+}
+
+.score-badge.poor {
+  background-color: var(--color-error-bg);
+  color: var(--color-error);
+}
+
+.image-list {
+  display: grid;
+  gap: 1rem;
+}
+
+.image-item {
+  background: var(--bg-primary);
+  padding: 1.25rem;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+}
+
+.image-item h4 {
+  margin: 0 0 1rem;
+  color: var(--text-primary);
+}
+
+.image-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.url-text {
+  word-break: break-all;
+  font-family: monospace;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.recommendation {
+  margin-top: 0.5rem;
+  padding: 0.75rem;
+  background: var(--color-warning-bg);
+  border-radius: 4px;
+  font-size: 0.9rem;
+  color: var(--color-warning);
+}
+
 .device-toggle button {
   padding: 0.5rem 2rem;
   border: 1px solid var(--border-color);
