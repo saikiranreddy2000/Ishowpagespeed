@@ -12,6 +12,13 @@
   top: 0;
   z-index: 100;
 }
+
+@media (prefers-color-scheme: dark) {
+  .main-header {
+    background: #2a2a2a;
+    box-shadow: 0 2px 8px #0008;
+  }
+}
 .header-title {
   font-size: 1.5rem;
   font-weight: bold;
@@ -32,8 +39,18 @@
   font-size: 1rem;
   transition: color 0.2s;
 }
+
 .header-nav ul li a:hover {
   color: #0078d4;
+}
+
+@media (prefers-color-scheme: dark) {
+  .header-nav ul li a {
+    color: #e0e0e0;
+  }
+  .header-nav ul li a:hover {
+    color: #66b3ff;
+  }
 }
 .hamburger {
   display: none;
@@ -54,6 +71,12 @@
   margin: 3px 0;
   border-radius: 2px;
   transition: all 0.3s;
+}
+
+@media (prefers-color-scheme: dark) {
+  .hamburger .bar {
+    background: #66b3ff;
+  }
 }
 @media (max-width: 800px) {
   .header-nav {
@@ -78,6 +101,13 @@
   flex-direction: column;
   padding-top: 60px;
 }
+
+@media (prefers-color-scheme: dark) {
+  .mobile-menu {
+    background: #2a2a2a;
+    box-shadow: 2px 0 16px #0008;
+  }
+}
 .mobile-menu nav ul {
   display: flex;
   flex-direction: column;
@@ -96,6 +126,15 @@
 }
 .mobile-menu nav ul li a:hover {
   color: #0078d4;
+}
+
+@media (prefers-color-scheme: dark) {
+  .mobile-menu nav ul li a {
+    color: #e0e0e0;
+  }
+  .mobile-menu nav ul li a:hover {
+    color: #66b3ff;
+  }
 }
 @keyframes slideIn {
   from { transform: translateX(-100%); }
@@ -121,13 +160,13 @@ body {
   background-size: cover;
   font-family: 'Segoe UI', 'Roboto', Arial, sans-serif;
   box-sizing: border-box;
-  /* Remove fixed positioning so page can scroll */
-  /* position: fixed; */
-  /* top: 0; */
-  /* left: 0; */
-  /* right: 0; */
-  /* bottom: 0; */
-  /* z-index: -1; */
+}
+
+@media (prefers-color-scheme: dark) {
+  body {
+    background: linear-gradient(135deg, #0d1a4d 0%, #8b4513 60%, #4d4d00 100%);
+    background-attachment: fixed;
+  }
 }
 
 .container {
@@ -140,6 +179,13 @@ body {
   min-width: 0;
   margin-left: auto;
   margin-right: auto;
+}
+
+@media (prefers-color-scheme: dark) {
+  .container {
+    background-image: linear-gradient(30deg, rgb(80, 40, 60), rgb(100, 60, 40));
+    box-shadow: 0 4px 24px 0 rgba(0,0,0,0.4), 0 1.5px 6px 0 rgba(0,0,0,0.2);
+  }
 }
 
 @media (max-width: 430px) {
@@ -159,11 +205,27 @@ body {
   table-layout: auto;
 }
 
+@media (prefers-color-scheme: dark) {
+  .results table {
+    background: #2a2a2a;
+    box-shadow: 0 1px 4px 0 rgba(0,0,0,0.3);
+  }
+}
+
 .url-input-row textarea {
   background: #f5faff;
   border-radius: 8px;
   border: 1px solid #dbeafe;
   box-shadow: 0 1px 2px 0 rgba(0,32,128,0.03);
+  color: #213547;
+}
+
+@media (prefers-color-scheme: dark) {
+  .url-input-row textarea {
+    background: #3a3a3a;
+    border-color: #4a4a4a;
+    color: #e0e0e0;
+  }
 }
 
 input[type="url"] {
@@ -171,6 +233,15 @@ input[type="url"] {
   border-radius: 8px;
   border: 1px solid #dbeafe;
   box-shadow: 0 1px 2px 0 rgba(0,32,128,0.03);
+  color: #213547;
+}
+
+@media (prefers-color-scheme: dark) {
+  input[type="url"] {
+    background: #3a3a3a;
+    border-color: #4a4a4a;
+    color: #e0e0e0;
+  }
 }
 
 button, .download-btn {
@@ -188,6 +259,15 @@ button:hover, .download-btn:hover {
   box-shadow: none;
 }
 
+@media (prefers-color-scheme: dark) {
+  button, .download-btn {
+    background: #0066cc;
+  }
+  button:hover, .download-btn:hover {
+    background: #0052a3;
+  }
+}
+
 /* Table header styling */
 .results th {
   background: #e3e9f7;
@@ -197,8 +277,23 @@ button:hover, .download-btn:hover {
   width: 150px;
 }
 
+@media (prefers-color-scheme: dark) {
+  .results th {
+    background: #3a3a3a;
+    color: #e0e0e0;
+    border-bottom-color: #4a4a4a;
+  }
+}
+
 .results td, .results th {
   padding: 7px 8px;
+  color: #213547;
+}
+
+@media (prefers-color-scheme: dark) {
+  .results td, .results th {
+    color: #e0e0e0;
+  }
 }
 
 .results tr:nth-child(even) td {
@@ -207,6 +302,15 @@ button:hover, .download-btn:hover {
 
 .results tr:hover td {
   background: #e3e9f7;
+}
+
+@media (prefers-color-scheme: dark) {
+  .results tr:nth-child(even) td {
+    background: #323232;
+  }
+  .results tr:hover td {
+    background: #404040;
+  }
 }
 /* --- Mobile (iPhone 16 reference: 390px x 844px) --- */
 @media (max-width: 430px) {

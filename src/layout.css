@@ -5,6 +5,12 @@
   background-color: #ffffff;
 }
 
+@media (prefers-color-scheme: dark) {
+  .layout {
+    background-color: #1a1a1a;
+  }
+}
+
 .main-content {
   flex: 1;
   padding: 2rem 0;
@@ -20,6 +26,13 @@
   padding: 1.5rem 0;
   margin-top: auto;
   border-top: 1px solid #e9ecef;
+}
+
+@media (prefers-color-scheme: dark) {
+  .footer {
+    background: #2a2a2a;
+    border-top-color: #3a3a3a;
+  }
 }
 
 .footer .container {
@@ -42,6 +55,12 @@
   color: #6c757d;
 }
 
+@media (prefers-color-scheme: dark) {
+  .footer p {
+    color: #adb5bd;
+  }
+}
+
 .footer-links {
   display: flex;
   gap: 1rem;
@@ -58,8 +77,23 @@
   color: #005a9e;
 }
 
+@media (prefers-color-scheme: dark) {
+  .footer-links a {
+    color: #66b3ff;
+  }
+  .footer-links a:hover {
+    color: #99ccff;
+  }
+}
+
 .separator {
   color: #dee2e6;
+}
+
+@media (prefers-color-scheme: dark) {
+  .separator {
+    color: #3a3a3a;
+  }
 }
 
 .developer-credit {
@@ -70,11 +104,24 @@
   padding-top: 1rem;
 }
 
+@media (prefers-color-scheme: dark) {
+  .developer-credit {
+    color: #adb5bd;
+    border-top-color: #3a3a3a;
+  }
+}
+
 .developer-credit a {
   color: #0078d4;
   text-decoration: none;
   margin-left: 0.25rem;
   font-weight: 500;
+}
+
+@media (prefers-color-scheme: dark) {
+  .developer-credit a {
+    color: #66b3ff;
+  }
 }
 
 .developer-credit a:hover {

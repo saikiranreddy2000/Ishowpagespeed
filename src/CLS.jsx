@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import './cls.css';
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001';
+
 
 export default function CLS() {
   const [url, setUrl] = useState('');
@@ -30,11 +32,13 @@ export default function CLS() {
     setError(null);
 
     try {
-      const response = await fetch(
-        `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${encodeURIComponent(
-          url
-        )}&strategy=${deviceType}&category=performance&key=${import.meta.env.VITE_PAGESPEED_API_KEY}`
-      );
+       const [response] = await Promise.all([
+            fetch(`${BACKEND_URL}/api/pagespeed`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ url, strategy: device })
+            }),
+      ]);
       
       if (!response.ok) {
         throw new Error('Failed to fetch PageSpeed data');

@@ -10,7 +10,7 @@ const MENU_ITEMS = [
   { label: 'CLS Calculator', to: `${BASE_PATH}/cls-calculator` },
   { label: 'FCP calculator', to: `${BASE_PATH}/fcp-calculator` },
   { label: 'TTFB calculator', to: `${BASE_PATH}/ttfb-calculator` },
-  { label: 'Learn here', to: `${BASE_PATH}/learn` },
+  // { label: 'Learn here', to: `${BASE_PATH}/learn` },
 ];
 
 export default function Header() {

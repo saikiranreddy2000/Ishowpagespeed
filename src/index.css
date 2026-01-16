@@ -10,6 +10,13 @@
   background-color: #ffffff;
 }
 
+@media (prefers-color-scheme: dark) {
+  :root {
+    color: #f0f0f0;
+    background-color: #1a1a1a;
+  }
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -40,6 +47,15 @@ a {
 
 a:hover {
   color: #005a9e;
+}
+
+@media (prefers-color-scheme: dark) {
+  a {
+    color: #66b3ff;
+  }
+  a:hover {
+    color: #99ccff;
+  }
 }
 
 h1 {
