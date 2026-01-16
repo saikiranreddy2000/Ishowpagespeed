@@ -6,6 +6,9 @@ import CruxGraphChart from './CruxGraphChart';
 import * as XLSX from 'xlsx';
 import './App.css';
 
+// Backend URL - uses environment variable for production, localhost for development
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001';
+
 export default function ReportGenerator() {
   const [excelUrl, setExcelUrl] = useState(null);
   const [progress, setProgress] = useState({ done: 0, total: 0 });
@@ -32,7 +35,6 @@ export default function ReportGenerator() {
       const fetchCrux = async (formFactor) => {
         setCruxGraph(g => ({ ...g, loading: true, error: null, formFactor }));
         try {
-          const apiKey = 'AIzaSyApNpUJyvuNDt3RZZIa2rCASP_s98CClxc';
           // Try url-level first
           let body = {
             url,
@@ -43,7 +45,7 @@ export default function ReportGenerator() {
               'interaction_to_next_paint'
             ]
           };
-          let res = await fetch(`https://chromeuxreport.googleapis.com/v1/records:queryHistoryRecord?key=${apiKey}`, {
+          let res = await fetch(`${BACKEND_URL}/api/crux`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(body)
@@ -60,7 +62,7 @@ export default function ReportGenerator() {
                 'interaction_to_next_paint'
               ]
             };
-            res = await fetch(`https://chromeuxreport.googleapis.com/v1/records:queryHistoryRecord?key=${apiKey}`, {
+            res = await fetch(`${BACKEND_URL}/api/crux`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(body)
@@ -116,7 +118,6 @@ export default function ReportGenerator() {
     setLoading(true);
     setResults([]);
     setExcelUrl(null);
-    const apiKey = 'AIzaSyAF6N58p5HULIGapVSNFWmBT-8BYadvU9A';
     const urlList = urls.filter(Boolean);
     const BATCH_SIZE = 5; // Number of URLs to process in parallel
     const DELAY_MS = 1500; // Delay between batches (1.5 seconds)
@@ -128,8 +129,16 @@ export default function ReportGenerator() {
       const fetchAll = batch.map(async (url) => {
         try {
           const [mobileRes, desktopRes] = await Promise.all([
-            fetch(`https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${encodeURIComponent(url)}&strategy=mobile&key=${apiKey}`),
-            fetch(`https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${encodeURIComponent(url)}&strategy=desktop&key=${apiKey}`)
+            fetch(`${BACKEND_URL}/api/pagespeed`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ url, strategy: 'mobile' })
+            }),
+            fetch(`${BACKEND_URL}/api/pagespeed`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ url, strategy: 'desktop' })
+            })
           ]);
           const mobileData = await mobileRes.json();
           const desktopData = await desktopRes.json();

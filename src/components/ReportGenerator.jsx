@@ -57,7 +57,6 @@ function ReportGenerator() {
     setLoading(true);
     setResults([]);
     setExcelUrl(null);
-    const apiKey = 'AIzaSyAF6N58p5HULIGapVSNFWmBT-8BYadvU9A';
     const urlList = urls.filter(Boolean);
     const BATCH_SIZE = 5;
     const DELAY_MS = 1500;
